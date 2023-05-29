@@ -1,0 +1,159 @@
+;include "../include/io.mac"
+section .data
+	back db "..", 0
+	curr db ".", 0
+	slash db "/", 0
+	; declare global vars here
+	string_format db "%s\n", 0
+	extern printf
+	extern strcpy
+	extern strcmp
+	extern strlen
+	extern strcat
+
+section .text
+	global pwd
+
+;;	void pwd(char **directories, int n, char *output)
+;	Adauga in parametrul output path-ul rezultat din
+;	parcurgerea celor n foldere din directories
+pwd:
+	enter 0, 0
+	;pun argumentele in registre
+	mov esi, [ebp + 8] ; directories
+	mov ecx, [ebp + 12] ; n
+	mov edi, [ebp + 16] ; output
+
+	xor eax, eax
+	;inc eax
+	;PRINTF32 `%d\n\x0`, ecx
+	; verific
+parcurg:
+    cmp eax, ecx
+    je end
+
+    ; Print the current directory
+    mov edx, [esi + eax * 4]
+	;mov ebx, [esi + eax*4]
+    ;PRINTF32 `%d %d  %s\n\x0`,ecx, eax,edx
+	
+	push ecx; salvez ecx
+	push eax
+	;push edx
+     ;PRINTF32 `dupa pushi %s\n\x0`,edx
+	 xor eax, eax
+
+	push edx
+	push curr
+	call strcmp
+	add esp, 8
+
+	; rez e in eax
+	cmp eax, 0
+	je daca_e_punct
+    
+	
+	pop eax
+	mov edx, [esi + eax * 4]
+	push eax
+	xor eax, eax
+   ; PRINTF32 `before %s\n\x0`, edx
+	push edx
+	push back
+	call strcmp
+	add esp,8
+	;pop edx
+	;PRINTF32 `daca e ounct punct: %d\n\x0`, eax
+	;PRINTF32 `after %s\n\x0`, edx ; il strica strcmp ru de tot 
+	cmp eax, 0
+	je daca_e_punct_punct
+    ; ajunge aici e folder trb sa fac strcat la edi
+	; concatenez 1 = sursa 2 = destinatia
+    ;push edx
+	
+	
+	;PRINTF32 `output eax1: %s\n\x0`, edi
+
+	push slash
+	push edi
+	call strcat
+	add esp, 8
+
+	pop eax
+	;mov edx, [esi + eax * 4];daca nu fac asa e futut
+	push dword [esi + eax*4]
+	pop edx
+	push eax
+
+	push edx
+	push edi
+	call strcat
+	add esp, 8
+	;PRINTF32 `output eax2**: %s\n\x0`, edi
+	;pop edx
+	pop eax
+	pop ecx
+	inc eax
+	;PRINTF32 `output edi1: %s\n\x0`, edi
+	;PRINTF32 `output edx1: %s\n\x0`, edx
+	jmp parcurg
+
+daca_e_punct:
+    ;PRINTF32 `daca e punct: %d\n\x0`,eax
+	;pop edx
+	;PRINTF32 `tot aici %s\n\x0`,edx
+	pop eax	
+	pop ecx
+    inc eax
+    jmp parcurg
+
+daca_e_punct_punct:
+; caut penultimul slash si pun terminatorul pe el
+; iterez de la coada spre cap in vectorul edi
+;o sa am nevoie de strlen
+    ;PRINTF32 `daca e ounct punct: %d\n\x0`, eax
+	;pop edx
+	push edi;
+	push edi
+	call strlen
+	add esp,4
+	;PRINTF32 `strlen punct punct: %d\n\x0`, eax
+	cmp byte [edi], 0
+	je lung_0
+
+	 ;ma duc la ultimul / il salvez pe edi
+	;push eax ; ii dau lui ebx val lui eax
+	;pop ebx
+	;dec eax
+	add edi, eax
+	;PRINTF32 `ultimul caracterr: %c \n\x0`, byte [edi]
+caut_last_slash:
+		;PRINTF32 `din caut slah: %c \n\x0`, byte [edi]
+		cmp byte[edi], '/'
+		je inlocuiesc_cu_term
+		dec edi
+		jmp caut_last_slash
+
+inlocuiesc_cu_term:
+   mov byte [edi],0
+
+lung_0:
+    pop edi
+	pop eax	
+	pop ecx
+    inc eax
+    jmp parcurg
+
+
+
+
+end:
+   ;PRINTF32 `end -dilema cu ultimul slash %s\n\x0`, edi
+
+	push slash
+	push edi
+	call strcat
+	add esp, 8
+	;PRINTF32 `end -dilema cu ultimul slash %s\n\x0`, edi
+	leave
+	ret
